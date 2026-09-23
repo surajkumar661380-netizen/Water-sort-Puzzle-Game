@@ -1,0 +1,1767 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Water Sort Puzzle</title>
+    <meta name="description" content="An elegant glassmorphic Water Sort Puzzle game featuring smooth pouring animations, 5 progressive levels, undo support, and glowing effects." />
+    <meta property="og:title" content="Water Sort Puzzle" />
+    <meta property="og:description" content="An elegant glassmorphic Water Sort Puzzle game featuring smooth pouring animations, 5 progressive levels, undo support, and glowing effects." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+
+    <style>
+      :root {
+        --bg-start: #0b1214;
+        --bg-end: #123331;
+        --accent-teal: #2dd4bf;
+        --accent-teal-glow: rgba(45, 212, 191, 0.45);
+        --accent-teal-subtle: rgba(45, 212, 191, 0.15);
+        --accent-coral: #e8917a;
+        --accent-coral-glow: rgba(232, 145, 122, 0.6);
+        --card-bg: rgba(12, 24, 26, 0.68);
+        --card-border: rgba(45, 212, 191, 0.2);
+        --tube-glass-bg: rgba(255, 255, 255, 0.04);
+        --tube-border: rgba(255, 255, 255, 0.24);
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        font-family: var(--font-main);
+        background: linear-gradient(135deg, var(--bg-start) 0%, #0d2222 45%, var(--bg-end) 100%);
+        min-height: 100vh;
+        min-height: 100dvh;
+        color: var(--text-primary);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow-x: hidden;
+        position: relative;
+        padding: 16px;
+      }
+
+      /* Ambient glow orbs in the background */
+      .ambient-glow {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(80px);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .ambient-1 {
+        width: 320px;
+        height: 320px;
+        background: rgba(45, 212, 191, 0.08);
+        top: -40px;
+        left: 10%;
+      }
+      .ambient-2 {
+        width: 380px;
+        height: 380px;
+        background: rgba(18, 51, 49, 0.35);
+        bottom: -60px;
+        right: 8%;
+      }
+
+      /* Main Game Card - Glassmorphism style */
+      .game-card {
+        position: relative;
+        z-index: 10;
+        width: 100%;
+        max-width: 660px;
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 24px;
+        border: 1px solid var(--card-border);
+        box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.75), 0 0 35px rgba(45, 212, 191, 0.08);
+        display: flex;
+        flex-direction: column;
+        padding: 24px 20px 22px;
+        transition: all 0.3s ease;
+      }
+
+      /* Top Bar */
+      .top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      }
+
+      .stats-group {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .stat-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        margin-bottom: 2px;
+      }
+
+      .stat-value {
+        font-family: var(--font-mono);
+        font-size: 1.18rem;
+        font-weight: 700;
+        color: #ffffff;
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      /* Glowing Circular Buttons */
+      .circle-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--card-border);
+        color: var(--text-primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+      }
+
+      .circle-btn:hover:not(:disabled) {
+        background: rgba(45, 212, 191, 0.16);
+        border-color: var(--accent-teal);
+        color: var(--accent-teal);
+        box-shadow: 0 0 16px var(--accent-teal-glow);
+        transform: translateY(-2px);
+      }
+
+      .circle-btn:active:not(:disabled) {
+        transform: translateY(0) scale(0.95);
+      }
+
+      .circle-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .circle-btn svg {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2.2;
+      }
+
+      /* Tubes Grid / Arena */
+      .tubes-container {
+        position: relative;
+        min-height: 280px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 18px 8px 24px;
+      }
+
+      .tubes-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-content: center;
+        gap: 22px 18px;
+        width: 100%;
+        max-width: 600px;
+      }
+
+      /* Tube Card Structure */
+      .tube-wrapper {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        perspective: 600px;
+        touch-action: manipulation;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .tube-rim {
+        width: 58px;
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.1) 100%);
+        border: 1.5px solid rgba(255, 255, 255, 0.35);
+        margin-bottom: -2px;
+        z-index: 4;
+        transition: all 0.25s ease;
+      }
+
+      .tube {
+        position: relative;
+        width: 50px;
+        height: 180px;
+        background: var(--tube-glass-bg);
+        border: 2px solid var(--tube-border);
+        border-top: none;
+        border-radius: 4px 4px 26px 26px;
+        box-shadow: inset 0 0 14px rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column-reverse;
+        justify-content: flex-start;
+        padding-bottom: 2px;
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transform-origin: 50% 15px;
+      }
+
+      /* Glass Vertical Reflection Streak */
+      .tube::before {
+        content: '';
+        position: absolute;
+        top: 4px;
+        left: 5px;
+        bottom: 14px;
+        width: 3.5px;
+        border-radius: 2px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.12) 65%, transparent 100%);
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      /* Glass Bottom Curved Highlight */
+      .tube::after {
+        content: '';
+        position: absolute;
+        bottom: 3px;
+        left: 8px;
+        right: 8px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.14);
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      /* Selected State: lifts up and glows teal */
+      .tube-wrapper.selected {
+        transform: translateY(-16px);
+      }
+
+      .tube-wrapper.selected .tube {
+        border-color: var(--accent-teal);
+        box-shadow: 0 0 22px var(--accent-teal-glow), inset 0 0 12px rgba(45, 212, 191, 0.25);
+      }
+
+      .tube-wrapper.selected .tube-rim {
+        border-color: var(--accent-teal);
+        background: rgba(45, 212, 191, 0.4);
+        box-shadow: 0 0 14px var(--accent-teal-glow);
+      }
+
+      /* Solved Tube State: subtle completed glow */
+      .tube-wrapper.solved .tube {
+        border-color: rgba(45, 212, 191, 0.55);
+        box-shadow: 0 0 18px rgba(45, 212, 191, 0.3), inset 0 0 10px rgba(45, 212, 191, 0.18);
+      }
+
+      .tube-wrapper.solved .tube-rim {
+        border-color: rgba(45, 212, 191, 0.6);
+        background: rgba(45, 212, 191, 0.25);
+      }
+
+      /* Solved Check Badge */
+      .solved-badge {
+        position: absolute;
+        bottom: -22px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--accent-teal);
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        opacity: 0;
+        transform: translateY(-4px);
+        transition: all 0.3s ease;
+        pointer-events: none;
+      }
+
+      .tube-wrapper.solved .solved-badge {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Invalid Move Shake Animation */
+      @keyframes shakeCoral {
+        0%, 100% {
+          transform: translateX(0);
+        }
+        20% {
+          transform: translateX(-7px);
+        }
+        40% {
+          transform: translateX(6px);
+        }
+        60% {
+          transform: translateX(-4px);
+        }
+        80% {
+          transform: translateX(3px);
+        }
+      }
+
+      .tube-wrapper.invalid-shake {
+        animation: shakeCoral 0.42s ease-in-out;
+      }
+
+      .tube-wrapper.invalid-shake .tube {
+        border-color: var(--accent-coral) !important;
+        box-shadow: 0 0 20px var(--accent-coral-glow), inset 0 0 12px rgba(232, 145, 122, 0.3) !important;
+      }
+
+      .tube-wrapper.invalid-shake .tube-rim {
+        border-color: var(--accent-coral) !important;
+        background: rgba(232, 145, 122, 0.4) !important;
+        box-shadow: 0 0 14px var(--accent-coral-glow) !important;
+      }
+
+      /* Liquid Layers */
+      .liquid-layer {
+        width: 100%;
+        height: 25%;
+        position: relative;
+        transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+      }
+
+      /* Rounded bottom for the lowest liquid layer */
+      .liquid-layer.is-bottom {
+        border-radius: 0 0 24px 24px;
+      }
+
+      /* Meniscus surface highlight for the top-most layer */
+      .liquid-layer.is-top::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 2px;
+        right: 2px;
+        height: 4px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.42);
+        z-index: 2;
+      }
+
+      /* Subtle glossy sheen over all layers */
+      .liquid-layer::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0%, transparent 40%, rgba(0, 0, 0, 0.12) 100%);
+        pointer-events: none;
+      }
+
+      /* Color Palette definitions */
+      .color-sapphire {
+        background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 70%, #1e40af 100%);
+      }
+      .color-emerald {
+        background: linear-gradient(180deg, #10b981 0%, #059669 70%, #047857 100%);
+      }
+      .color-amber {
+        background: linear-gradient(180deg, #f59e0b 0%, #d97706 70%, #b45309 100%);
+      }
+      .color-ruby {
+        background: linear-gradient(180deg, #ef4444 0%, #dc2626 70%, #b91c1c 100%);
+      }
+      .color-amethyst {
+        background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 70%, #6d28d9 100%);
+      }
+      .color-orange {
+        background: linear-gradient(180deg, #f97316 0%, #ea580c 70%, #c2410c 100%);
+      }
+      .color-rose {
+        background: linear-gradient(180deg, #ec4899 0%, #db2777 70%, #be185d 100%);
+      }
+      .color-cyan {
+        background: linear-gradient(180deg, #06b6d4 0%, #0891b2 70%, #0e7490 100%);
+      }
+
+      /* Dynamic SVG Pouring Stream Layer */
+      #pour-canvas-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 40;
+      }
+
+      /* Splash particles container */
+      .splash-container {
+        position: absolute;
+        pointer-events: none;
+        z-index: 50;
+      }
+
+      .splash-drop {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.9;
+        animation: dropSplash 0.4s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+      }
+
+      @keyframes dropSplash {
+        0% {
+          transform: translate(0, 0) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(var(--tx), var(--ty)) scale(0.2);
+          opacity: 0;
+        }
+      }
+
+      /* Landing Ripple */
+      .landing-ripple {
+        position: absolute;
+        border-radius: 50%;
+        border: 2px solid var(--accent-teal);
+        transform: translate(-50%, -50%) scale(0.2);
+        opacity: 1;
+        animation: ripplePop 0.4s ease-out forwards;
+      }
+
+      @keyframes ripplePop {
+        0% {
+          transform: translate(-50%, -50%) scale(0.2);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1.6);
+          opacity: 0;
+        }
+      }
+
+      /* Bottom Bar - Pill-shaped Bar */
+      .bottom-bar-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 26px;
+      }
+
+      .bottom-pill-bar {
+        background: rgba(14, 28, 30, 0.78);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--card-border);
+        border-radius: 9999px;
+        padding: 6px 18px;
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+      }
+
+      .pill-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        font-family: var(--font-main);
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+        padding: 6px 8px;
+        border-radius: 9999px;
+        transition: all 0.2s ease;
+      }
+
+      .pill-action-btn:hover {
+        color: var(--accent-teal);
+      }
+
+      .pill-action-btn .mini-circle-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--card-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent-teal);
+        transition: all 0.22s ease;
+        box-shadow: 0 0 10px rgba(45, 212, 191, 0.15);
+      }
+
+      .pill-action-btn:hover .mini-circle-btn {
+        background: rgba(45, 212, 191, 0.22);
+        border-color: var(--accent-teal);
+        box-shadow: 0 0 16px var(--accent-teal-glow);
+        transform: scale(1.08);
+      }
+
+      .pill-action-btn:active .mini-circle-btn {
+        transform: scale(0.95);
+      }
+
+      .pill-divider {
+        width: 1px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      /* Notification Toast */
+      .toast-msg {
+        position: absolute;
+        top: 74px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+        background: rgba(24, 18, 18, 0.88);
+        border: 1px solid var(--accent-coral);
+        box-shadow: 0 0 16px var(--accent-coral-glow);
+        color: #ffedd5;
+        font-size: 0.76rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        padding: 6px 16px;
+        border-radius: 9999px;
+        pointer-events: none;
+        opacity: 0;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 60;
+      }
+
+      .toast-msg.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* Win Screen Card Modal */
+      .win-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(8, 16, 18, 0.84);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease;
+        padding: 24px;
+      }
+
+      .win-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .win-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        transform: scale(0.85);
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        width: 100%;
+        max-width: 380px;
+      }
+
+      .win-overlay.active .win-content {
+        transform: scale(1);
+      }
+
+      .check-circle {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        background: rgba(45, 212, 191, 0.15);
+        border: 2px solid var(--accent-teal);
+        box-shadow: 0 0 35px var(--accent-teal-glow), inset 0 0 15px rgba(45, 212, 191, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 18px;
+        color: var(--accent-teal);
+        animation: checkPulse 2s infinite ease-in-out;
+      }
+
+      @keyframes checkPulse {
+        0%, 100% {
+          box-shadow: 0 0 25px var(--accent-teal-glow), inset 0 0 15px rgba(45, 212, 191, 0.2);
+        }
+        50% {
+          box-shadow: 0 0 45px rgba(45, 212, 191, 0.7), inset 0 0 20px rgba(45, 212, 191, 0.35);
+        }
+      }
+
+      .check-circle svg {
+        width: 40px;
+        height: 40px;
+        stroke-dasharray: 60;
+        stroke-dashoffset: 60;
+        animation: drawCheck 0.5s 0.2s ease forwards;
+      }
+
+      @keyframes drawCheck {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      .win-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        color: #ffffff;
+        margin-bottom: 6px;
+        text-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
+      }
+
+      .win-subtitle {
+        font-size: 0.88rem;
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+        letter-spacing: 0.06em;
+      }
+
+      .win-stats-card {
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 12px 16px;
+        margin-bottom: 28px;
+      }
+
+      .win-actions {
+        display: flex;
+        gap: 14px;
+        width: 100%;
+      }
+
+      .btn-primary-glow {
+        flex: 1;
+        padding: 12px 20px;
+        border-radius: 9999px;
+        background: var(--accent-teal);
+        border: none;
+        color: #06201e;
+        font-family: var(--font-main);
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 0 24px var(--accent-teal-glow);
+        transition: all 0.2s ease;
+      }
+
+      .btn-primary-glow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 32px rgba(45, 212, 191, 0.7);
+      }
+
+      .btn-primary-glow:active {
+        transform: translateY(0) scale(0.97);
+      }
+
+      .btn-secondary-glass {
+        padding: 12px 18px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        color: #ffffff;
+        font-family: var(--font-main);
+        font-size: 0.9rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn-secondary-glass:hover {
+        background: rgba(255, 255, 255, 0.14);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      /* Confetti Canvas */
+      #confetti-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 24px;
+        pointer-events: none;
+        z-index: 101;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 520px) {
+        body {
+          padding: 8px;
+        }
+
+        .game-card {
+          padding: 18px 12px 16px;
+          border-radius: 20px;
+        }
+
+        .tubes-grid {
+          gap: 16px 10px;
+        }
+
+        .tube {
+          width: 44px;
+          height: 160px;
+          border-radius: 4px 4px 22px 22px;
+        }
+
+        .tube-rim {
+          width: 50px;
+        }
+
+        .stat-value {
+          font-size: 1.05rem;
+        }
+
+        .bottom-pill-bar {
+          gap: 10px;
+          padding: 5px 12px;
+        }
+
+        .pill-action-btn {
+          font-size: 0.75rem;
+          padding: 4px 6px;
+        }
+
+        .pill-action-btn .mini-circle-btn {
+          width: 32px;
+          height: 32px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Ambient glowing backdrops -->
+    <div class="ambient-glow ambient-1"></div>
+    <div class="ambient-glow ambient-2"></div>
+
+    <!-- Main Game Card -->
+    <div class="game-card">
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <div class="stats-group">
+          <div class="stat-item">
+            <span class="stat-label">Level</span>
+            <span class="stat-value" id="level-display">1</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Moves</span>
+            <span class="stat-value" id="moves-display">0</span>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <!-- Sound Toggle Button -->
+          <button class="circle-btn" id="sound-btn" title="Toggle Sound" aria-label="Toggle Sound">
+            <svg id="sound-icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <svg id="sound-icon-off" style="display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          </button>
+
+          <!-- Undo Button -->
+          <button class="circle-btn" id="undo-btn" title="Undo Move" aria-label="Undo Move" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M3 7v6h6"></path>
+              <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Toast Feedback Message -->
+      <div class="toast-msg" id="toast-msg">Invalid Move</div>
+
+      <!-- Tubes Arena Container -->
+      <div class="tubes-container" id="tubes-container">
+        <!-- SVG Canvas for pouring stream -->
+        <svg id="pour-canvas-layer"></svg>
+
+        <!-- Splash Drop Layer -->
+        <div id="splash-layer" class="splash-container"></div>
+
+        <!-- Tubes Grid -->
+        <div class="tubes-grid" id="tubes-grid"></div>
+      </div>
+
+      <!-- Bottom Pill-Shaped Bar -->
+      <div class="bottom-bar-container">
+        <div class="bottom-pill-bar">
+          <button class="pill-action-btn" id="restart-btn" title="Restart Level">
+            <div class="mini-circle-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M21.5 2v6h-6"></path>
+                <path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"></path>
+              </svg>
+            </div>
+            <span>Restart</span>
+          </button>
+
+          <div class="pill-divider"></div>
+
+          <button class="pill-action-btn" id="next-level-btn" title="Next Level">
+            <span>Next Level</span>
+            <div class="mini-circle-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polygon points="5 4 15 12 5 20 5 4" fill="currentColor"></polygon>
+                <line x1="19" y1="5" x2="19" y2="19"></line>
+              </svg>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Win Screen Overlay -->
+      <div class="win-overlay" id="win-overlay">
+        <canvas id="confetti-canvas"></canvas>
+        <div class="win-content">
+          <div class="check-circle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h2 class="win-title">Level Complete!</h2>
+          <p class="win-subtitle">All liquids perfectly sorted</p>
+
+          <div class="win-stats-card">
+            <div class="stat-item">
+              <span class="stat-label">Moves Used</span>
+              <span class="stat-value" id="win-moves-val">12</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Level</span>
+              <span class="stat-value" id="win-level-val">1</span>
+            </div>
+          </div>
+
+          <div class="win-actions">
+            <button class="btn-secondary-glass" id="win-replay-btn" title="Replay">
+              Replay
+            </button>
+            <button class="btn-primary-glow" id="win-next-btn">
+              <span>Next Level</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Self-Contained Game Script -->
+    <script type="module">
+      // ----------------------------------------------------
+      // GAME CONFIGURATION & PREDEFINED LEVELS
+      // ----------------------------------------------------
+      const TUBE_CAPACITY = 4;
+
+      const COLORS = {
+        sapphire: { id: 'sapphire', name: 'Sapphire', cssClass: 'color-sapphire', hex: '#2563eb' },
+        emerald:  { id: 'emerald',  name: 'Emerald',  cssClass: 'color-emerald',  hex: '#10b981' },
+        amber:    { id: 'amber',    name: 'Amber',    cssClass: 'color-amber',    hex: '#f59e0b' },
+        ruby:     { id: 'ruby',     name: 'Ruby',     cssClass: 'color-ruby',     hex: '#ef4444' },
+        amethyst: { id: 'amethyst', name: 'Amethyst', cssClass: 'color-amethyst', hex: '#8b5cf6' },
+        orange:   { id: 'orange',   name: 'Orange',   cssClass: 'color-orange',   hex: '#f97316' },
+        rose:     { id: 'rose',     name: 'Rose',     cssClass: 'color-rose',     hex: '#ec4899' },
+        cyan:     { id: 'cyan',     name: 'Cyan',     cssClass: 'color-cyan',     hex: '#06b6d4' }
+      };
+
+      // 5+ progressive levels with increasing complexity (more colors and tubes)
+      // Verified 100% solvable
+      const PRESET_LEVELS = [
+        // Level 1: 5 tubes (3 colors, 2 empty) - Warm-up
+        {
+          id: 1,
+          tubes: [
+            ['sapphire', 'emerald', 'ruby', 'sapphire'],
+            ['emerald', 'ruby', 'emerald', 'ruby'],
+            ['ruby', 'sapphire', 'sapphire', 'emerald'],
+            [],
+            []
+          ]
+        },
+        // Level 2: 6 tubes (4 colors, 2 empty)
+        {
+          id: 2,
+          tubes: [
+            ['amber', 'ruby', 'emerald', 'sapphire'],
+            ['sapphire', 'amber', 'ruby', 'emerald'],
+            ['emerald', 'amber', 'sapphire', 'amber'],
+            ['ruby', 'emerald', 'sapphire', 'ruby'],
+            [],
+            []
+          ]
+        },
+        // Level 3: 7 tubes (5 colors, 2 empty)
+        {
+          id: 3,
+          tubes: [
+            ['amethyst', 'ruby', 'amber', 'sapphire'],
+            ['emerald', 'amethyst', 'sapphire', 'ruby'],
+            ['amber', 'emerald', 'amethyst', 'emerald'],
+            ['sapphire', 'ruby', 'emerald', 'amber'],
+            ['ruby', 'amethyst', 'amber', 'sapphire'],
+            [],
+            []
+          ]
+        },
+        // Level 4: 8 tubes (6 colors, 2 empty)
+        {
+          id: 4,
+          tubes: [
+            ['orange', 'ruby', 'sapphire', 'emerald'],
+            ['amethyst', 'amber', 'orange', 'ruby'],
+            ['emerald', 'sapphire', 'amethyst', 'amber'],
+            ['ruby', 'amethyst', 'orange', 'sapphire'],
+            ['amber', 'orange', 'emerald', 'amethyst'],
+            ['sapphire', 'amber', 'ruby', 'emerald'],
+            [],
+            []
+          ]
+        },
+        // Level 5: 9 tubes (7 colors, 2 empty)
+        {
+          id: 5,
+          tubes: [
+            ['rose', 'orange', 'sapphire', 'emerald'],
+            ['amethyst', 'ruby', 'amber', 'rose'],
+            ['emerald', 'sapphire', 'orange', 'ruby'],
+            ['amber', 'rose', 'amethyst', 'sapphire'],
+            ['ruby', 'emerald', 'amber', 'orange'],
+            ['rose', 'amethyst', 'emerald', 'amber'],
+            ['sapphire', 'ruby', 'orange', 'amethyst'],
+            [],
+            []
+          ]
+        },
+        // Level 6: 10 tubes (8 colors, 2 empty)
+        {
+          id: 6,
+          tubes: [
+            ['cyan', 'rose', 'orange', 'sapphire'],
+            ['emerald', 'amethyst', 'ruby', 'amber'],
+            ['rose', 'cyan', 'sapphire', 'emerald'],
+            ['orange', 'ruby', 'amber', 'amethyst'],
+            ['cyan', 'emerald', 'rose', 'orange'],
+            ['sapphire', 'ruby', 'amber', 'cyan'],
+            ['amethyst', 'sapphire', 'emerald', 'rose'],
+            ['amber', 'orange', 'amethyst', 'ruby'],
+            [],
+            []
+          ]
+        }
+      ];
+
+      // ----------------------------------------------------
+      // WEB AUDIO SYNTHESIZER (Pure JS, zero external files)
+      // ----------------------------------------------------
+      class SoundSystem {
+        constructor() {
+          this.ctx = null;
+          this.muted = false;
+        }
+
+        init() {
+          if (!this.ctx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+              this.ctx = new AudioContextClass();
+            }
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        }
+
+        playSelect() {
+          if (this.muted) return;
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(540, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.09);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.09);
+        }
+
+        playPour() {
+          if (this.muted) return;
+          this.init();
+          if (!this.ctx) return;
+          // Water trickle & bubble combination
+          const now = this.ctx.currentTime;
+          [380, 480, 620].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            const startTime = now + idx * 0.07;
+            osc.frequency.setValueAtTime(freq, startTime);
+            osc.frequency.exponentialRampToValueAtTime(freq * 1.35, startTime + 0.14);
+            gain.gain.setValueAtTime(0.07, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.16);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.16);
+          });
+        }
+
+        playError() {
+          if (this.muted) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.linearRampToValueAtTime(140, now + 0.16);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        }
+
+        playTubeSolved() {
+          if (this.muted) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            const t = now + i * 0.06;
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(0.09, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.28);
+          });
+        }
+
+        playWin() {
+          if (this.muted) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const chords = [523.25, 659.25, 783.99, 1046.5, 1318.51];
+          chords.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            const t = now + idx * 0.08;
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(0.12, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.45);
+          });
+        }
+      }
+
+      // ----------------------------------------------------
+      // CONFETTI PARTICLE SYSTEM (Canvas based, 60fps)
+      // ----------------------------------------------------
+      class ConfettiSystem {
+        constructor(canvas) {
+          this.canvas = canvas;
+          this.ctx = canvas.getContext('2d');
+          this.particles = [];
+          this.animationId = null;
+          this.colors = ['#2dd4bf', '#5eead4', '#e8917a', '#fcd34d', '#38bdf8', '#ffffff'];
+        }
+
+        resize() {
+          const rect = this.canvas.parentElement.getBoundingClientRect();
+          this.canvas.width = rect.width;
+          this.canvas.height = rect.height;
+        }
+
+        start() {
+          this.resize();
+          this.particles = [];
+          const count = 90;
+          for (let i = 0; i < count; i++) {
+            this.particles.push({
+              x: this.canvas.width * 0.5 + (Math.random() - 0.5) * 40,
+              y: this.canvas.height * 0.4,
+              vx: (Math.random() - 0.5) * 12,
+              vy: Math.random() * -10 - 4,
+              size: Math.random() * 7 + 4,
+              color: this.colors[Math.floor(Math.random() * this.colors.length)],
+              tilt: Math.random() * 10,
+              tiltSpeed: Math.random() * 0.1 + 0.05,
+              opacity: 1,
+              decay: Math.random() * 0.008 + 0.004,
+              gravity: 0.28
+            });
+          }
+
+          if (this.animationId) cancelAnimationFrame(this.animationId);
+          this.loop();
+        }
+
+        stop() {
+          if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+          }
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+
+        loop() {
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          let alive = 0;
+
+          for (let p of this.particles) {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += p.gravity;
+            p.vx *= 0.98;
+            p.tilt += p.tiltSpeed;
+            p.opacity -= p.decay;
+
+            if (p.opacity > 0 && p.y < this.canvas.height + 20) {
+              alive++;
+              this.ctx.save();
+              this.ctx.globalAlpha = Math.max(0, p.opacity);
+              this.ctx.fillStyle = p.color;
+              this.ctx.translate(p.x, p.y);
+              this.ctx.rotate(p.tilt);
+              this.ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.7);
+              this.ctx.restore();
+            }
+          }
+
+          if (alive > 0) {
+            this.animationId = requestAnimationFrame(() => this.loop());
+          }
+        }
+      }
+
+      // ----------------------------------------------------
+      // SOLVABLE LEVEL GENERATOR (For levels beyond preset)
+      // ----------------------------------------------------
+      function generateSolvableLevel(levelNumber) {
+        // Calculate number of colors and tubes based on level
+        const numColors = Math.min(8, 3 + Math.floor((levelNumber - 1) / 2));
+        const numEmpty = 2;
+        const totalTubes = numColors + numEmpty;
+        const colorKeys = Object.keys(COLORS).slice(0, numColors);
+
+        // Start with a solved state
+        let tubes = [];
+        for (let i = 0; i < numColors; i++) {
+          tubes.push([colorKeys[i], colorKeys[i], colorKeys[i], colorKeys[i]]);
+        }
+        for (let i = 0; i < numEmpty; i++) {
+          tubes.push([]);
+        }
+
+        // Perform random reverse-pour steps to shuffle while strictly preserving solvability
+        const shuffleSteps = 40 + numColors * 6;
+        for (let step = 0; step < shuffleSteps; step++) {
+          // Pick a random non-empty source tube
+          const nonEmpties = [];
+          tubes.forEach((t, idx) => {
+            if (t.length > 0) nonEmpties.push(idx);
+          });
+          if (nonEmpties.length === 0) break;
+          const fromIdx = nonEmpties[Math.floor(Math.random() * nonEmpties.length)];
+
+          // Pick a destination that has room
+          const availableDests = [];
+          tubes.forEach((t, idx) => {
+            if (idx !== fromIdx && t.length < TUBE_CAPACITY) {
+              availableDests.push(idx);
+            }
+          });
+          if (availableDests.length === 0) continue;
+          const toIdx = availableDests[Math.floor(Math.random() * availableDests.length)];
+
+          // Reverse pour 1 layer
+          const color = tubes[fromIdx].pop();
+          tubes[toIdx].push(color);
+        }
+
+        return { id: levelNumber, tubes };
+      }
+
+      // ----------------------------------------------------
+      // WATER SORT GAME CORE ENGINE
+      // ----------------------------------------------------
+      class WaterSortGame {
+        constructor() {
+          this.currentLevelIndex = 0;
+          this.tubes = [];
+          this.initialTubesState = [];
+          this.selectedTubeIndex = null;
+          this.movesCount = 0;
+          this.moveHistory = [];
+          this.isAnimating = false;
+          this.sounds = new SoundSystem();
+
+          // DOM Elements
+          this.tubesGrid = document.getElementById('tubes-grid');
+          this.tubesContainer = document.getElementById('tubes-container');
+          this.pourSvg = document.getElementById('pour-canvas-layer');
+          this.splashLayer = document.getElementById('splash-layer');
+          this.levelDisplay = document.getElementById('level-display');
+          this.movesDisplay = document.getElementById('moves-display');
+          this.undoBtn = document.getElementById('undo-btn');
+          this.restartBtn = document.getElementById('restart-btn');
+          this.nextLevelBtn = document.getElementById('next-level-btn');
+          this.soundBtn = document.getElementById('sound-btn');
+          this.soundIconOn = document.getElementById('sound-icon-on');
+          this.soundIconOff = document.getElementById('sound-icon-off');
+          this.toastMsg = document.getElementById('toast-msg');
+
+          // Win Modal
+          this.winOverlay = document.getElementById('win-overlay');
+          this.winMovesVal = document.getElementById('win-moves-val');
+          this.winLevelVal = document.getElementById('win-level-val');
+          this.winNextBtn = document.getElementById('win-next-btn');
+          this.winReplayBtn = document.getElementById('win-replay-btn');
+          this.confetti = new ConfettiSystem(document.getElementById('confetti-canvas'));
+
+          this.bindEvents();
+          this.loadLevel(1);
+        }
+
+        bindEvents() {
+          this.undoBtn.addEventListener('click', () => this.handleUndo());
+          this.restartBtn.addEventListener('click', () => this.restartLevel());
+          this.nextLevelBtn.addEventListener('click', () => this.loadLevel(this.currentLevelIndex + 2));
+          this.winNextBtn.addEventListener('click', () => {
+            this.hideWinOverlay();
+            this.loadLevel(this.currentLevelIndex + 2);
+          });
+          this.winReplayBtn.addEventListener('click', () => {
+            this.hideWinOverlay();
+            this.restartLevel();
+          });
+
+          this.soundBtn.addEventListener('click', () => {
+            this.sounds.muted = !this.sounds.muted;
+            this.soundIconOn.style.display = this.sounds.muted ? 'none' : 'block';
+            this.soundIconOff.style.display = this.sounds.muted ? 'block' : 'none';
+            if (!this.sounds.muted) {
+              this.sounds.playSelect();
+            }
+          });
+
+          // Prevent double tap zooms on mobile
+          document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+        }
+
+        showToast(msg) {
+          this.toastMsg.textContent = msg;
+          this.toastMsg.classList.add('show');
+          if (this.toastTimeout) clearTimeout(this.toastTimeout);
+          this.toastTimeout = setTimeout(() => {
+            this.toastMsg.classList.remove('show');
+          }, 1400);
+        }
+
+        loadLevel(levelNum) {
+          this.currentLevelIndex = levelNum - 1;
+          let levelData;
+
+          if (this.currentLevelIndex < PRESET_LEVELS.length) {
+            levelData = PRESET_LEVELS[this.currentLevelIndex];
+          } else {
+            levelData = generateSolvableLevel(levelNum);
+          }
+
+          // Deep copy tubes
+          this.tubes = levelData.tubes.map(t => [...t]);
+          this.initialTubesState = levelData.tubes.map(t => [...t]);
+          this.selectedTubeIndex = null;
+          this.movesCount = 0;
+          this.moveHistory = [];
+          this.isAnimating = false;
+
+          this.updateStatsUI();
+          this.renderTubes();
+          this.hideWinOverlay();
+        }
+
+        restartLevel() {
+          if (this.isAnimating) return;
+          this.tubes = this.initialTubesState.map(t => [...t]);
+          this.selectedTubeIndex = null;
+          this.movesCount = 0;
+          this.moveHistory = [];
+          this.updateStatsUI();
+          this.renderTubes();
+          this.sounds.playSelect();
+        }
+
+        updateStatsUI() {
+          this.levelDisplay.textContent = this.currentLevelIndex + 1;
+          this.movesDisplay.textContent = this.movesCount;
+          this.undoBtn.disabled = this.moveHistory.length === 0 || this.isAnimating;
+        }
+
+        isTubeSolved(tube) {
+          if (tube.length === 0) return true;
+          if (tube.length === TUBE_CAPACITY) {
+            const firstColor = tube[0];
+            return tube.every(c => c === firstColor);
+          }
+          return false;
+        }
+
+        checkLevelComplete() {
+          return this.tubes.every(tube => this.isTubeSolved(tube));
+        }
+
+        renderTubes() {
+          this.tubesGrid.innerHTML = '';
+
+          this.tubes.forEach((tube, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'tube-wrapper';
+            wrapper.dataset.index = index;
+
+            if (this.selectedTubeIndex === index) {
+              wrapper.classList.add('selected');
+            }
+
+            const isSolved = tube.length === TUBE_CAPACITY && this.isTubeSolved(tube);
+            if (isSolved) {
+              wrapper.classList.add('solved');
+            }
+
+            // Top Lip Rim
+            const rim = document.createElement('div');
+            rim.className = 'tube-rim';
+            wrapper.appendChild(rim);
+
+            // Tube glass body
+            const tubeEl = document.createElement('div');
+            tubeEl.className = 'tube';
+
+            // Liquid layers
+            tube.forEach((colorKey, layerIdx) => {
+              const layer = document.createElement('div');
+              const colorInfo = COLORS[colorKey] || { cssClass: 'color-sapphire' };
+              layer.className = `liquid-layer ${colorInfo.cssClass}`;
+
+              if (layerIdx === 0) {
+                layer.classList.add('is-bottom');
+              }
+              if (layerIdx === tube.length - 1) {
+                layer.classList.add('is-top');
+              }
+
+              tubeEl.appendChild(layer);
+            });
+
+            wrapper.appendChild(tubeEl);
+
+            // Solved check badge
+            const solvedBadge = document.createElement('div');
+            solvedBadge.className = 'solved-badge';
+            solvedBadge.innerHTML = `
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>DONE</span>
+            `;
+            wrapper.appendChild(solvedBadge);
+
+            // Click / Tap Handler
+            wrapper.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.handleTubeClick(index);
+            });
+
+            this.tubesGrid.appendChild(wrapper);
+          });
+        }
+
+        handleTubeClick(index) {
+          if (this.isAnimating) return;
+
+          // If no tube selected yet
+          if (this.selectedTubeIndex === null) {
+            // Cannot select an empty tube as source
+            if (this.tubes[index].length === 0) {
+              this.triggerInvalidShake(index, "Empty tube");
+              return;
+            }
+
+            // Already solved tube? Can still pour if needed, but selecting it is fine
+            this.selectedTubeIndex = index;
+            this.sounds.playSelect();
+            this.renderTubes();
+            return;
+          }
+
+          // If clicking the currently selected tube: deselect
+          if (this.selectedTubeIndex === index) {
+            this.selectedTubeIndex = null;
+            this.sounds.playSelect();
+            this.renderTubes();
+            return;
+          }
+
+          // Otherwise, attempt to pour from source to destination
+          const fromIdx = this.selectedTubeIndex;
+          const toIdx = index;
+          this.attemptPour(fromIdx, toIdx);
+        }
+
+        attemptPour(fromIdx, toIdx) {
+          const sourceTube = this.tubes[fromIdx];
+          const destTube = this.tubes[toIdx];
+
+          if (sourceTube.length === 0) {
+            this.selectedTubeIndex = null;
+            this.renderTubes();
+            return;
+          }
+
+          const topColor = sourceTube[sourceTube.length - 1];
+
+          // Count consecutive matching top colors in source tube
+          let matchingCount = 0;
+          for (let i = sourceTube.length - 1; i >= 0 && sourceTube[i] === topColor; i--) {
+            matchingCount++;
+          }
+
+          const destEmptySpace = TUBE_CAPACITY - destTube.length;
+
+          // Validity rule according to prompt:
+          // "A pour is valid only if: destination tube is empty, OR destination's top color matches source's top color, AND destination has enough empty space for the layers being poured.
+          // When pouring, move all matching consecutive top-color layers from source to destination (not just one).
+          // If a move is invalid, show a brief coral-colored shake animation on the destination tube and do not move liquid."
+          const isDestEmpty = destTube.length === 0;
+          const isColorMatch = !isDestEmpty && destTube[destTube.length - 1] === topColor;
+          const hasEnoughSpace = destEmptySpace >= matchingCount;
+
+          if ((isDestEmpty || isColorMatch) && hasEnoughSpace) {
+            // Valid Pour!
+            this.executePour(fromIdx, toIdx, topColor, matchingCount);
+          } else {
+            // Invalid Pour
+            let reason = "Invalid move";
+            if (!isDestEmpty && !isColorMatch) {
+              reason = "Color mismatch";
+            } else if (!hasEnoughSpace) {
+              reason = "Not enough space";
+            }
+            this.triggerInvalidShake(toIdx, reason);
+          }
+        }
+
+        triggerInvalidShake(tubeIndex, reason) {
+          this.sounds.playError();
+          this.showToast(reason);
+          const wrappers = this.tubesGrid.querySelectorAll('.tube-wrapper');
+          const targetWrapper = wrappers[tubeIndex];
+          if (targetWrapper) {
+            targetWrapper.classList.remove('invalid-shake');
+            // Force DOM reflow to retrigger animation
+            void targetWrapper.offsetWidth;
+            targetWrapper.classList.add('invalid-shake');
+            setTimeout(() => {
+              targetWrapper.classList.remove('invalid-shake');
+            }, 440);
+          }
+        }
+
+        executePour(fromIdx, toIdx, colorKey, count) {
+          this.isAnimating = true;
+          this.selectedTubeIndex = null;
+
+          // Save move to history for undo
+          this.moveHistory.push({
+            fromIdx,
+            toIdx,
+            colorKey,
+            count
+          });
+
+          this.movesCount++;
+          this.updateStatsUI();
+
+          const wrappers = this.tubesGrid.querySelectorAll('.tube-wrapper');
+          const sourceWrapper = wrappers[fromIdx];
+          const destWrapper = wrappers[toIdx];
+
+          const sourceRect = sourceWrapper.getBoundingClientRect();
+          const destRect = destWrapper.getBoundingClientRect();
+          const containerRect = this.tubesContainer.getBoundingClientRect();
+
+          // Calculate tilt angle & direction
+          const isDestRight = destRect.left >= sourceRect.left;
+          const tiltAngle = isDestRight ? 26 : -26;
+          const translateX = isDestRight ? 14 : -14;
+
+          // Apply tilt animation on source tube
+          const sourceTube = sourceWrapper.querySelector('.tube');
+          const sourceRim = sourceWrapper.querySelector('.tube-rim');
+          sourceWrapper.style.transition = 'transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)';
+          sourceWrapper.style.transform = `translate(${translateX}px, -24px) rotate(${tiltAngle}deg)`;
+          sourceWrapper.style.zIndex = '50';
+
+          // Pour sound
+          this.sounds.playPour();
+
+          // Dynamic SVG Stream Drawing
+          const colorHex = (COLORS[colorKey] && COLORS[colorKey].hex) || '#2dd4bf';
+          this.drawPouringStream(sourceWrapper, destWrapper, colorHex, isDestRight);
+
+          // Animate layers transferring smoothly
+          setTimeout(() => {
+            // Move liquid data
+            for (let i = 0; i < count; i++) {
+              this.tubes[fromIdx].pop();
+              this.tubes[toIdx].push(colorKey);
+            }
+
+            // Create splash effect on target
+            this.createSplash(destWrapper, colorHex);
+
+            // Re-render tubes
+            this.renderTubes();
+
+            // Clear stream
+            this.clearPouringStream();
+
+            // Reset source wrapper transform
+            if (sourceWrapper) {
+              sourceWrapper.style.transform = '';
+              sourceWrapper.style.zIndex = '';
+            }
+
+            // Check if destination tube just became solved
+            if (this.tubes[toIdx].length === TUBE_CAPACITY && this.isTubeSolved(this.tubes[toIdx])) {
+              this.sounds.playTubeSolved();
+            }
+
+            // Check win condition
+            if (this.checkLevelComplete()) {
+              setTimeout(() => {
+                this.handleLevelWin();
+              }, 300);
+            }
+
+            this.isAnimating = false;
+            this.updateStatsUI();
+          }, 360);
+        }
+
+        drawPouringStream(sourceWrapper, destWrapper, colorHex, isDestRight) {
+          const cRect = this.tubesContainer.getBoundingClientRect();
+          const sRect = sourceWrapper.querySelector('.tube').getBoundingClientRect();
+          const dRect = destWrapper.querySelector('.tube').getBoundingClientRect();
+
+          // Lip points relative to container
+          const startX = isDestRight ? (sRect.right - cRect.left - 4) : (sRect.left - cRect.left + 4);
+          const startY = sRect.top - cRect.top + 6;
+
+          const endX = dRect.left - cRect.left + dRect.width / 2;
+          const endY = dRect.top - cRect.top + 4;
+
+          const controlX = (startX + endX) / 2;
+          const controlY = Math.min(startY, endY) - 18;
+
+          this.pourSvg.innerHTML = `
+            <defs>
+              <linearGradient id="streamGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="${colorHex}" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="${colorHex}" stop-opacity="1" />
+              </linearGradient>
+              <filter id="streamGlow">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <path d="M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}"
+                  fill="none"
+                  stroke="url(#streamGrad)"
+                  stroke-width="6.5"
+                  stroke-linecap="round"
+                  filter="url(#streamGlow)">
+              <animate attributeName="stroke-dashoffset" values="40;0" dur="0.25s" repeatCount="indefinite"/>
+            </path>
+          `;
+        }
+
+        clearPouringStream() {
+          this.pourSvg.innerHTML = '';
+        }
+
+        createSplash(destWrapper, colorHex) {
+          const cRect = this.tubesContainer.getBoundingClientRect();
+          const dRect = destWrapper.querySelector('.tube').getBoundingClientRect();
+
+          const landingX = dRect.left - cRect.left + dRect.width / 2;
+          const landingY = dRect.top - cRect.top + 14;
+
+          // Ripple
+          const ripple = document.createElement('div');
+          ripple.className = 'landing-ripple';
+          ripple.style.left = `${landingX}px`;
+          ripple.style.top = `${landingY}px`;
+          ripple.style.borderColor = colorHex;
+          ripple.style.boxShadow = `0 0 10px ${colorHex}`;
+          this.splashLayer.appendChild(ripple);
+
+          // 7 micro splash droplets
+          for (let i = 0; i < 7; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'splash-drop';
+            const size = Math.random() * 4 + 3;
+            drop.style.width = `${size}px`;
+            drop.style.height = `${size}px`;
+            drop.style.backgroundColor = colorHex;
+            drop.style.boxShadow = `0 0 6px ${colorHex}`;
+            drop.style.left = `${landingX}px`;
+            drop.style.top = `${landingY}px`;
+
+            const angle = (Math.PI * 2 * i) / 7 + (Math.random() - 0.5) * 0.5;
+            const dist = Math.random() * 20 + 10;
+            const tx = Math.cos(angle) * dist;
+            const ty = -Math.abs(Math.sin(angle) * dist) - 6;
+
+            drop.style.setProperty('--tx', `${tx}px`);
+            drop.style.setProperty('--ty', `${ty}px`);
+
+            this.splashLayer.appendChild(drop);
+          }
+
+          setTimeout(() => {
+            this.splashLayer.innerHTML = '';
+          }, 450);
+        }
+
+        handleUndo() {
+          if (this.isAnimating || this.moveHistory.length === 0) return;
+
+          const lastMove = this.moveHistory.pop();
+          const { fromIdx, toIdx, colorKey, count } = lastMove;
+
+          // Reverse: take back from destination into source
+          for (let i = 0; i < count; i++) {
+            this.tubes[toIdx].pop();
+            this.tubes[fromIdx].push(colorKey);
+          }
+
+          this.movesCount = Math.max(0, this.movesCount - 1);
+          this.selectedTubeIndex = null;
+          this.sounds.playSelect();
+          this.updateStatsUI();
+          this.renderTubes();
+        }
+
+        handleLevelWin() {
+          this.sounds.playWin();
+          this.winLevelVal.textContent = this.currentLevelIndex + 1;
+          this.winMovesVal.textContent = this.movesCount;
+          this.winOverlay.classList.add('active');
+          this.confetti.start();
+        }
+
+        hideWinOverlay() {
+          this.winOverlay.classList.remove('active');
+          this.confetti.stop();
+        }
+      }
+
+      // Initialize game once DOM is loaded
+      window.addEventListener('DOMContentLoaded', () => {
+        window.waterSortGame = new WaterSortGame();
+      });
+    </script>
+  </body>
+</html>

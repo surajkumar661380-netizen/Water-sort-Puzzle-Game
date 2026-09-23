@@ -1,0 +1,8 @@
+{
+  "name": "Water Sort Puzzle",
+  "description": "An elegant glassmorphic Water Sort Puzzle game featuring smooth pouring animations, 5 progressive levels, undo support, and glowing effects.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
